@@ -9,6 +9,7 @@ class RequestLog extends Model
     public $timestamps = false; // created_at is set manually, no updated_at needed
 
     protected $fillable = [
+        'project_name',
         'method',
         'path',
         'status_code',

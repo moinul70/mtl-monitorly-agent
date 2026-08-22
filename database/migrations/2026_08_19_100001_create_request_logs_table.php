@@ -10,6 +10,7 @@ return new class extends Migration
     {
         Schema::create('request_logs', function (Blueprint $table) {
             $table->id();
+            $table->string('project_name', 200);
             $table->string('method', 10);
             $table->string('path');
             $table->unsignedSmallInteger('status_code');
@@ -18,11 +19,9 @@ return new class extends Migration
             $table->string('user_agent')->nullable();
             $table->timestamp('created_at')->useCurrent();
 
-            // Fixes issue #1: the read query filters by created_at and often
-            // also filters/groups by status_code — index both so it stays
-            // fast as the table grows instead of full-scanning.
             $table->index('created_at');
             $table->index('status_code');
+            $table->index('project_name');
         });
     }
 

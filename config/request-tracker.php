@@ -2,6 +2,9 @@
 
 return [
 
+    // Project name to use in the UI. Defaults to "my-project" if not set.
+    'project_name' => env('REQUEST_TRACKER_PROJECT_NAME', 'my-project'),
+
     // Route prefix the /metrics endpoint is registered under, e.g. "api"
     // means the final URL is /api/metrics
     'route_prefix' => 'api',
@@ -21,10 +24,11 @@ return [
     // Fix #5: path patterns (Str::is syntax) that should never be logged
     // at all — keeps noise out of the table.
     'excluded_paths' => [
-        'api/metrics',
-        'up',
-        'health',
-    ],
+    'api/metrics/*',   // matches api/metrics/ followed by anything
+    'api/metrics',     // matches the bare path too, no trailing segment
+    'up',
+    'health',
+],
 
     // Fix #2: how many days of logs to keep. Old rows are deleted by the
     // request-tracker:prune command — remember to schedule it (see README).

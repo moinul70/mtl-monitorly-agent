@@ -1,15 +1,15 @@
 <?php
 
-namespace Mtl\RequestTracker\Http\Controllers;
+namespace App\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Cache;
-use Mtl\RequestTracker\Models\RequestLog;
+use App\Models\RequestLog;
 
 class MetricsController extends Controller
 {
-    public function show(): JsonResponse
+    public function show(string $projectName): JsonResponse
     {
         // Fix #3: cache the computed result for a few seconds. If your
         // Node dashboard (or multiple browser tabs) polls every 5 seconds,
@@ -17,16 +17,18 @@ class MetricsController extends Controller
         // cache window, no matter how many clients are polling.
         $ttl = config('request-tracker.cache_ttl', 5);
 
-        $data = Cache::remember('request-tracker:metrics', $ttl, function () {
+        $data = Cache::remember("request-tracker:metrics:$projectName", $ttl, function () use ($projectName) {
             $windowMinutes = config('request-tracker.window_minutes', 5);
 
             $logs = RequestLog::where('created_at', '>=', now()->subMinutes($windowMinutes))
+            ->where('project_name', $projectName)
                 ->orderByDesc('created_at')
                 ->limit(200)
                 ->get();
 
             return [
-                'logs' => $logs,
+                'projectName' => $projectName,
+                'endpoints' => $logs,
                 'count' => $logs->count(),
                 'avgResponseMs' => $logs->isNotEmpty() ? round($logs->avg('response_ms'), 1) : 0,
                 'errorRatePercent' => $logs->isNotEmpty()

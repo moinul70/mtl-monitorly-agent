@@ -1,14 +1,14 @@
 <?php
 
-namespace Mtl\RequestTracker\Http\Middleware;
+namespace App\Http\Middleware;
 
+use App\Models\RequestLog;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
-use Mtl\RequestTracker\Models\RequestLog;
 
-class TrackRequestMiddleware
+class MonitoringAgentMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
@@ -47,6 +47,7 @@ class TrackRequestMiddleware
         $durationMs = (int) round((microtime(true) - $start) * 1000);
 
         $payload = [
+            'project_name' => config('request-tracker.project_name', 'my-project'),
             'method' => $request->method(),
             'path' => $request->path(),
             'status_code' => $response->getStatusCode(),
@@ -61,6 +62,7 @@ class TrackRequestMiddleware
         // removing the write cost from this request/worker entirely.
         if (config('request-tracker.use_queue', false)) {
             \Mtl\RequestTracker\Jobs\RecordRequestLog::dispatch(
+                projectName: $payload['project_name'],
                 method: $payload['method'],
                 path: $payload['path'],
                 statusCode: $payload['status_code'],
