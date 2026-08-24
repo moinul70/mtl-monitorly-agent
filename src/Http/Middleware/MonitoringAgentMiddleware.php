@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use App\Models\RequestLog;
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -76,6 +77,7 @@ class MonitoringAgentMiddleware
         }
 
         RequestLog::create($payload);
+        Cache::forget("request-tracker:metrics:{$payload['project_name']}");
     }
 
     protected function shouldSample(): bool

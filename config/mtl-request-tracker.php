@@ -14,7 +14,7 @@ return [
 
     // Fix #3: how long (seconds) the computed metrics response is cached.
     // Prevents every dashboard poll from recomputing aggregates from scratch.
-    'cache_ttl' => 5,
+    'cache_ttl' => 60,
 
     // Fix #4: fraction of requests to actually log, 0.0–1.0. Leave at 1.0
     // (log everything) unless you're on high traffic and want to reduce
