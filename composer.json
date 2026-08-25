@@ -1,5 +1,5 @@
 {
-    "name": "moinul/mtl-monitoring-agent",
+    "name": "mtl/monitoring-agent",
     "description": "One middleware that logs request timing/status into a table, and a cached endpoint to read it back — built for polling dashboards.",
     "type": "library",
     "license": "MIT",

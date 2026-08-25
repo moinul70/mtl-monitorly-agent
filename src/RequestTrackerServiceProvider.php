@@ -32,9 +32,7 @@ class RequestTrackerServiceProvider extends ServiceProvider
             ], 'request-tracker-migrations');
         }
 
-        Route::prefix(config('request-tracker.route_prefix', 'api'))
-            ->middleware('api')
-            ->group(__DIR__ . '/../routes/api.php');
+        $this->loadRoutesFrom(__DIR__.'/../routes/api.php');
 
         $this->app['router']->aliasMiddleware(
             'track-requests',
