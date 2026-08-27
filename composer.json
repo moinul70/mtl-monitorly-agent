@@ -1,15 +1,20 @@
 {
-    "name": "moinul-techlab/monitoring-agent",
-    "description": "One middleware that logs request timing/status into a table, and a cached endpoint to read it back — built for polling dashboards.",
+    "name": "mtlm/monitoring-agent",
+    "description": "Laravel server monitoring agent for collecting request performance, status, memory, and endpoint metrics.",
     "type": "library",
     "license": "MIT",
+    "homepage": "https://github.com/mtlm/monitoring-agent",
+    "support": {
+        "issues": "https://github.com/mtlm/monitoring-agent/issues",
+        "source": "https://github.com/mtlm/monitoring-agent"
+    },
     "require": {
-        "php": "^8.1|^8.2|^8.3",
-        "illuminate/support": "^10.0|^11.0|^12.0",
-        "illuminate/database": "^10.0|^11.0|^12.0",
-        "illuminate/http": "^10.0|^11.0|^12.0",
-        "illuminate/bus": "^10.0|^11.0|^12.0",
-        "illuminate/queue": "^10.0|^11.0|^12.0"
+        "php": "^8.1|^8.2|^8.3|^8.4",
+        "illuminate/support": "^10.0|^11.0|^12.0||^13.0",
+        "illuminate/database": "^10.0|^11.0|^12.0||^13.0",
+        "illuminate/http": "^10.0|^11.0|^12.0||^13.0",
+        "illuminate/bus": "^10.0|^11.0|^12.0|^13.0",
+        "illuminate/queue": "^10.0|^11.0|^12.0||^13.0"
     },
     "autoload": {
         "psr-4": {
@@ -23,6 +28,23 @@
             ]
         }
     },
-    "minimum-stability": "dev",
+    "keywords": [
+        "laravel",
+        "monitoring",
+        "server-monitoring",
+        "request-monitoring",
+        "uptime",
+        "performance",
+        "metrics",
+        "api-monitoring",
+        "request-tracker"
+    ],
+    "authors": [
+        {
+            "name": "Moinul Tech Lab",
+            "homepage": "https://github.com/mtlm"
+        }
+    ],
+    "minimum-stability": "stable",
     "prefer-stable": true
 }

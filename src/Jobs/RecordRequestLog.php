@@ -14,10 +14,13 @@ class RecordRequestLog implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public function __construct(
+        public string $projectName,
         public string $method,
         public string $path,
         public int $statusCode,
         public int $responseMs,
+        public float $memoryMB,
+        public float $peakMemoryMB,
         public ?string $ip,
         public ?string $userAgent,
         public string $createdAt,
@@ -31,11 +34,15 @@ class RecordRequestLog implements ShouldQueue
 
     public function handle(): void
     {
+ 
         RequestLog::create([
+            'project_name' => $this->projectName,
             'method' => $this->method,
             'path' => $this->path,
             'status_code' => $this->statusCode,
             'response_ms' => $this->responseMs,
+            'memory_mb' => $this->memoryMB,
+            'peak_memory_mb' => $this->peakMemoryMB,
             'ip' => $this->ip,
             'user_agent' => $this->userAgent,
             'created_at' => $this->createdAt,

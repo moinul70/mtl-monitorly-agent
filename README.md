@@ -6,6 +6,7 @@ One middleware logs every request's timing and status into a table. One cached e
 
 ```bash
 composer require moinul/mtl-monitoring-agent
+
 php artisan migrate
 ```
 

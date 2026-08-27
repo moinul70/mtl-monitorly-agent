@@ -15,6 +15,8 @@ return new class extends Migration
             $table->string('path');
             $table->unsignedSmallInteger('status_code');
             $table->unsignedInteger('response_ms');
+            $table->decimal('memory_mb', 10, 2)->default(0);
+            $table->decimal('peak_memory_mb', 10, 2)->default(0);
             $table->string('ip', 45)->nullable();
             $table->string('user_agent')->nullable();
             $table->timestamp('created_at')->useCurrent();
