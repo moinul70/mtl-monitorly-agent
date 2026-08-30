@@ -1,21 +1,21 @@
 <?php
 
-namespace Mtl\RequestTracker\Http\Controllers;
+namespace Mtl\MonitorlyAgent\Http\Controllers;
 
 use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Cache;
-use Mtl\RequestTracker\Models\RequestLog;
+use Mtl\MonitorlyAgent\Models\MtlRequestLog;
 
-class MetricsController extends Controller
+class MtlMetricsController extends Controller
 {
     public function show(string $projectName): JsonResponse
     {
 
-        $data = Cache::rememberForever("mtl-request-tracker:metrics:$projectName", function () use ($projectName) {
-            $windowMinutes = config('mtl-request-tracker.window_minutes', 5);
+        $data = Cache::rememberForever("mtl-monitorly-agent:metrics:$projectName", function () use ($projectName) {
+            $windowMinutes = config('mtl-monitorly-agent.window_minutes', 5);
 
-            $logs = RequestLog::where('project_name', $projectName)
+            $logs = MtlRequestLog::where('project_name', $projectName)
                 ->where('created_at', '>=', now()->subMinutes($windowMinutes))
                 ->orderByDesc('created_at')
                 ->get();

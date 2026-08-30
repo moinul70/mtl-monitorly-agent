@@ -1,8 +1,8 @@
 <?php
 
-namespace Mtl\RequestTracker\Http\Middleware;
+namespace Mtl\MonitorlyAgent\Http\Middleware;
 
-use Mtl\RequestTracker\Models\RequestLog;
+use Mtl\MonitorlyAgent\Models\MtlRequestLog;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -60,7 +60,7 @@ class MonitoringAgentMiddleware
         $peakMemoryMb = round(memory_get_peak_usage(true) / 1024 / 1024, 2);
 
         $payload = [
-            'project_name' => config('mtl-request-tracker.project_name'),
+            'project_name' => config('mtl-monitorly-agent.project_name'),
             'method' => $request->method(),
             'path' => $request->path(),
             'status_code' => $response->getStatusCode(),
@@ -75,19 +75,19 @@ class MonitoringAgentMiddleware
         // Optional queueing: off by default (see #6 below). When enabled,
         // the DB write happens on a queue worker instead of inline here,
         // removing the write cost from this request/worker entirely.
-        if (config('mtl-request-tracker.use_queue', false)) {
-            \Mtl\RequestTracker\Jobs\RecordRequestLog::dispatch(projectName: $payload['project_name'], method: $payload['method'], path: $payload['path'], statusCode: $payload['status_code'], responseMs: $payload['response_ms'], memoryMB: $payload['memory_mb'],peakMemoryMb: $payload['peak_memory_mb'], ip: $payload['ip'], userAgent: $payload['user_agent'], createdAt: $payload['created_at']->toDateTimeString());
+        if (config('mtl-monitorly-agent.use_queue', false)) {
+            \Mtl\MonitorlyAgent\Jobs\MtlRecordRequestLog::dispatch(projectName: $payload['project_name'], method: $payload['method'], path: $payload['path'], statusCode: $payload['status_code'], responseMs: $payload['response_ms'], memoryMB: $payload['memory_mb'],peakMemoryMb: $payload['peak_memory_mb'], ip: $payload['ip'], userAgent: $payload['user_agent'], createdAt: $payload['created_at']->toDateTimeString());
 
             return;
         }
 
-        RequestLog::create($payload);
-        Cache::forget("mtl-request-tracker:metrics:{$payload['project_name']}");
+        MtlRequestLog::create($payload);
+        Cache::forget("mtl-monitorly-agent:metrics:{$payload['project_name']}");
     }
 
     protected function shouldSample(): bool
     {
-        $rate = (float) config('mtl-request-tracker.sample_rate', 1.0);
+        $rate = (float) config('mtl-monitorly-agent.sample_rate', 1.0);
 
         if ($rate >= 1.0) {
             return true;
@@ -102,7 +102,7 @@ class MonitoringAgentMiddleware
 
     protected function isExcluded(string $path): bool
     {
-        foreach (config('mtl-request-tracker.excluded_paths', []) as $pattern) {
+        foreach (config('mtl-monitorly-agent.excluded_paths', []) as $pattern) {
             if (Str::is($pattern, $path)) {
                 return true;
             }

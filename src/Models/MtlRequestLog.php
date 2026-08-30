@@ -1,10 +1,10 @@
 <?php
 
-namespace Mtl\RequestTracker\Models;
+namespace Mtl\MonitorlyAgent\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class RequestLog extends Model
+class MtlRequestLog extends Model
 {
     public $timestamps = false;
 

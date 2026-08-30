@@ -3,48 +3,35 @@
 <head>
     <meta charset="utf-8">
     <style>
-        body { font-family: sans-serif; color: #1a1a1a; }
-        table { border-collapse: collapse; width: 100%; margin-top: 16px; }
-        th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #e5e5e5; font-size: 13px; }
-        th { background: #f5f5f5; font-weight: 600; }
-        .bad { color: #d33; font-weight: 600; }
-        .meta { color: #666; font-size: 13px; margin-bottom: 8px; }
+        body { font-family: -apple-system, Segoe UI, Roboto, sans-serif; color: #1a1a1a; line-height: 1.5; }
+        .wrap { max-width: 480px; }
+        h2 { font-size: 18px; margin-bottom: 4px; }
+        .meta { color: #666; font-size: 13px; margin-bottom: 20px; }
+        table { border-collapse: collapse; width: 100%; margin: 16px 0; }
+        td { padding: 8px 12px; font-size: 14px; border-bottom: 1px solid #eee; }
+        td:first-child { color: #666; }
+        td:last-child { text-align: right; font-weight: 600; }
+        .note { background: #f7f7f7; border-radius: 6px; padding: 12px 14px; font-size: 13px; color: #555; margin-top: 16px; }
+        .footer { font-size: 12px; color: #999; margin-top: 24px; }
     </style>
 </head>
 <body>
-    <h2>{{ $count }} vulnerable request(s) detected</h2>
+    <div class="wrap">
+        <h2>⚠️ {{ $count }} vulnerable request(s) detected</h2>
+        <p class="meta"></p>
 
-    <p class="meta">
-        Thresholds — status code &ge; {{ $thresholds['status_code'] }},
-        response time &gt; {{ $thresholds['response_ms'] }}ms,
-        peak memory &gt; {{ $thresholds['peak_memory_mb'] }}MB
-    </p>
+        <table>
+            <tr><td>Status code &ge; {{ $thresholds['status_code'] }}</td><td>{{ $breakdown['status'] }}</td></tr>
+            <tr><td>Response time &gt; {{ $thresholds['response_ms'] }}ms</td><td>{{ $breakdown['slow'] }}</td></tr>
+            <tr><td>Peak memory &gt; {{ $thresholds['peak_memory_mb'] }}MB</td><td>{{ $breakdown['memory'] }}</td></tr>
+        </table>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Project</th>
-                <th>Method</th>
-                <th>Path</th>
-                <th>Status</th>
-                <th>Response</th>
-                <th>Peak Mem</th>
-                <th>Time</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach ($rows as $row)
-                <tr>
-                    <td>{{ $row->project_name }}</td>
-                    <td>{{ $row->method }}</td>
-                    <td>{{ $row->path }}</td>
-                    <td class="{{ $row->status_code >= $thresholds['status_code'] ? 'bad' : '' }}">{{ $row->status_code }}</td>
-                    <td class="{{ $row->response_ms > $thresholds['response_ms'] ? 'bad' : '' }}">{{ $row->response_ms }}ms</td>
-                    <td class="{{ $row->peak_memory_mb > $thresholds['peak_memory_mb'] ? 'bad' : '' }}">{{ $row->peak_memory_mb }}MB</td>
-                    <td>{{ $row->created_at }}</td>
-                </tr>
-            @endforeach
-        </tbody>
-    </table>
+        <p class="note">
+            Full details for all {{ $count }} request(s) — including path, IP, and user agent —
+            are attached as a CSV file.
+        </p>
+
+        <p class="footer">Sent automatically by Monitoring Agent.</p>
+    </div>
 </body>
 </html>

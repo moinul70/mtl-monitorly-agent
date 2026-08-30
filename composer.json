@@ -18,13 +18,13 @@
     },
     "autoload": {
         "psr-4": {
-            "Mtl\\RequestTracker\\": "src/"
+            "Mtl\\MonitorlyAgent\\": "src/"
         }
     },
     "extra": {
         "laravel": {
             "providers": [
-                "Mtl\\RequestTracker\\RequestTrackerServiceProvider"
+                "Mtl\\MonitorlyAgent\\MonitorlyAgentServiceProvider"
             ]
         }
     },
@@ -37,7 +37,8 @@
         "performance",
         "metrics",
         "api-monitoring",
-        "request-tracker"
+        "request-tracker",
+        "mtl-monitoring-agent"
     ],
     "authors": [
         {

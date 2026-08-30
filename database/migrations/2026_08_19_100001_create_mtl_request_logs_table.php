@@ -8,7 +8,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('request_logs', function (Blueprint $table) {
+        Schema::create('mtl_request_logs', function (Blueprint $table) {
             $table->id();
             $table->string('project_name', 200);
             $table->string('method', 10);

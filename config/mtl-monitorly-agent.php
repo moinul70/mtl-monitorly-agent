@@ -30,7 +30,7 @@ return [
     ],
 
     // Fix #7: how many days of logs to keep. Old rows are deleted by the
-    // request-tracker:prune command — remember to schedule it (see README).
+    // monitorly-agent:prune command — remember to schedule it (see README).
     'retention_days' => 7,
 
     // Fix #8 (optional): queue the DB write instead of writing inline in

@@ -1,18 +1,18 @@
 <?php
 
-namespace Mtl\RequestTracker;
+namespace Mtl\MonitorlyAgent;
 
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Routing\Router;
 use Illuminate\Support\ServiceProvider;
-use Mtl\RequestTracker\Console\Commands\PruneRequestLogs;
-use Mtl\RequestTracker\Console\Commands\CheckVulnerableRequests;
+use Mtl\MonitorlyAgent\Console\Commands\PruneRequestLogs;
+use Mtl\MonitorlyAgent\Console\Commands\CheckVulnerableRequests;
 
-class RequestTrackerServiceProvider extends ServiceProvider
+class MonitorlyAgentServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/mtl-request-tracker.php', 'mtl-request-tracker');
+        $this->mergeConfigFrom(__DIR__ . '/../config/mtl-monitorly-agent.php', 'mtl-monitorly-agent');
     }
 
     public function boot(): void
@@ -27,31 +27,31 @@ class RequestTrackerServiceProvider extends ServiceProvider
 
             $this->publishes(
                 [
-                    __DIR__ . '/../config/mtl-request-tracker.php' => config_path('mtl-request-tracker.php'),
+                    __DIR__ . '/../config/mtl-monitorly-agent.php' => config_path('mtl-monitorly-agent.php'),
                 ],
-                'mtl-request-tracker-config',
+                'mtl-monitorly-agent-config',
             );
 
             $this->publishes(
                 [
                     __DIR__ . '/../database/migrations' => database_path('migrations'),
                 ],
-                'mtl-request-tracker-migrations',
+                'mtl-monitorly-agent-migrations',
             );
         }
 
         $this->loadRoutesFrom(__DIR__ . '/../routes/api.php');
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'mtl-request-tracker');
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'mtl-monitorly-agent');
 
-        $this->app->make(Router::class)->pushMiddlewareToGroup('api', \Mtl\RequestTracker\Http\Middleware\MonitoringAgentMiddleware::class);
+        $this->app->make(Router::class)->pushMiddlewareToGroup('api', \Mtl\MonitorlyAgent\Http\Middleware\MonitoringAgentMiddleware::class);
 
         $this->app->booted(function () {
             $schedule = $this->app->make(Schedule::class);
             $schedule->command('mtl-monitoring-agent:prune')->daily();
             // Only schedule the vulnerability check if alerts are actually
             // enabled — no wasted scheduler tick otherwise.
-            if (config('mtl-request-tracker.alerts.enabled', false)) {
-                $minutes = max(1, (int) config('mtl-request-tracker.alerts.check_frequency_minutes', 5));
+            if (config('mtl-monitorly-agent.alerts.enabled', false)) {
+                $minutes = max(1, (int) config('mtl-monitorly-agent.alerts.check_frequency_minutes', 5));
                 $schedule->command('mtl-monitoring-agent:check-vulnerable')
                     ->cron("*/{$minutes} * * * *")
                     ->withoutOverlapping();

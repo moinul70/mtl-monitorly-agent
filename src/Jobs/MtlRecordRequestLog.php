@@ -1,15 +1,15 @@
 <?php
 
-namespace Mtl\RequestTracker\Jobs;
+namespace Mtl\MonitorlyAgent\Jobs;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use Mtl\RequestTracker\Models\RequestLog;
+use Mtl\MonitorlyAgent\Models\MtlRequestLog;
 
-class RecordRequestLog implements ShouldQueue
+class MtlRecordRequestLog implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
@@ -28,14 +28,14 @@ class RecordRequestLog implements ShouldQueue
         // Respect config for which queue connection/name to run on, so this
         // doesn't silently land on a connection/queue the app isn't
         // actually processing.
-        $this->onConnection(config('request-tracker.queue_connection'));
-        $this->onQueue(config('request-tracker.queue_name', 'default'));
+        $this->onConnection(config('monitorly-agent.queue_connection'));
+        $this->onQueue(config('monitorly-agent.queue_name', 'default'));
     }
 
     public function handle(): void
     {
  
-        RequestLog::create([
+        MtlRequestLog::create([
             'project_name' => $this->projectName,
             'method' => $this->method,
             'path' => $this->path,

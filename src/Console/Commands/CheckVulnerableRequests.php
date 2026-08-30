@@ -1,12 +1,12 @@
 <?php
 
-namespace Mtl\RequestTracker\Console\Commands;
+namespace Mtl\MonitorlyAgent\Console\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail;
-use Mtl\RequestTracker\Mail\VulnerableRequestsDetected;
-use Mtl\RequestTracker\Models\RequestLog;
+use Mtl\MonitorlyAgent\Mail\VulnerableRequestsDetected;
+use Mtl\MonitorlyAgent\Models\MtlRequestLog;
 
 class CheckVulnerableRequests extends Command
 {
@@ -19,16 +19,16 @@ class CheckVulnerableRequests extends Command
     // and the next scheduled run picks up where this one left off.
     protected const SCAN_BATCH_SIZE = 5000;
 
-    protected const WATERMARK_KEY = 'mtl-request-tracker:alerts:last_id';
+    protected const WATERMARK_KEY = 'mtl-monitoring-agent:alerts:last_id';
 
     public function handle(): void
     {
-        if (! config('mtl-request-tracker.alerts.enabled', false)) {
-            $this->info('Vulnerability alerts are disabled (mtl-request-tracker.alerts.enabled).');
+        if (! config('mtl-monitorly-agent.alerts.enabled', false)) {
+            $this->info('Vulnerability alerts are disabled (mtl-monitorly-agent.alerts.enabled).');
             return;
         }
 
-        $recipients = config('mtl-request-tracker.alerts.recipients', []);
+        $recipients = config('mtl-monitorly-agent.alerts.recipients', []);
 
         if (empty($recipients)) {
             $this->warn('Vulnerability alerts are enabled but no recipients are configured — skipping.');
@@ -37,7 +37,7 @@ class CheckVulnerableRequests extends Command
 
         $lastId = (int) Cache::get(self::WATERMARK_KEY, 0);
 
-        $newRows = RequestLog::where('id', '>', $lastId)
+        $newRows = MtlRequestLog::where('id', '>', $lastId)
             ->orderBy('id')
             ->limit(self::SCAN_BATCH_SIZE)
             ->get();
@@ -52,8 +52,8 @@ class CheckVulnerableRequests extends Command
         // re-scanned (and vulnerable ones re-alerted) on every single run.
         Cache::forever(self::WATERMARK_KEY, (int) $newRows->max('id'));
 
-        $thresholds = config('mtl-request-tracker.alerts.thresholds');
-        $maxRows = config('mtl-request-tracker.alerts.max_rows_per_email', 50);
+        $thresholds = config('mtl-monitorly-agent.alerts.thresholds');
+        $maxRows = config('mtl-monitorly-agent.alerts.max_rows_per_email', 50);
 
         $vulnerable = $newRows->filter(function ($row) use ($thresholds) {
             return $row->status_code >= $thresholds['status_code']

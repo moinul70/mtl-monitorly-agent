@@ -1,6 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Mtl\RequestTracker\Http\Controllers\MetricsController;
+use Mtl\MonitorlyAgent\Http\Controllers\MtlMetricsController;
 
-Route::get(config('mtl-request-tracker.route_prefix') . '/metrics/{projectName}', [MetricsController::class, 'show'])->name('request-tracker.metrics.show');
+Route::get(config('mtl-monitorly-agent.route_prefix') . '/metrics/{projectName}', [MtlMetricsController::class, 'show'])->name('monitorly-agent.metrics.show');
