@@ -1,6 +1,6 @@
 {
     "name": "mtlm/monitoring-agent",
-    "description": "Laravel server monitoring agent for collecting request performance, status, memory, and endpoint metrics.",
+    "description": "Laravel server monitoring agent for collecting request performance, status, memory, and endpoint metrics with vulnerable email alert",
     "license": "MIT",
     "homepage": "https://github.com/mtlm/monitoring-agent",
     "support": {
