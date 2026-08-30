@@ -1,4 +1,4 @@
-# Monitoring Agent (mtlm/monitoring-agent)
+# Monitorly Agent (mtlm/monitoring-agent)
 
 A lightweight Laravel package that logs request timing, status, and memory usage into a table, serves it back through a cached JSON endpoint for a polling dashboard, and optionally emails a group of recipients when requests cross configurable "vulnerable" thresholds — all queued, not sent inline.
 
@@ -24,9 +24,9 @@ A lightweight Laravel package that logs request timing, status, and memory usage
 
 ## Features
 
-- One middleware, attached wherever you want, logs every request's method, path, status code, response time, memory delta, and peak memory into a `request_logs` table
+- One middleware, attached wherever you want, logs every request's method, path, status code, response time, memory delta, and peak memory into an `mtl_request_logs` table
 - A cached `GET /metrics/{projectName}` endpoint aggregates recent logs into stats a dashboard can poll every few seconds without re-querying the database each time
-- Optional scheduled scan that emails a group of recipients a batched summary whenever requests cross configurable status/latency/memory thresholds
+- Optional scheduled scan that emails a group of recipients a batched summary (with a CSV attachment of full details) whenever requests cross configurable status/latency/memory thresholds
 - Sampling, path exclusions, and retention pruning so logging stays cheap even on modest hosting
 - Optional queueing for both the DB write and the alert email, so neither adds cost to the request/response cycle
 
@@ -116,24 +116,27 @@ Published to `config/mtl-monitorly-agent.php`.
 
 | Key | Env var | Default | Purpose |
 |---|---|---|---|
-| `project_name` | `REQUEST_TRACKER_PROJECT_NAME` | `my-project` | Value stored in `project_name` for every row logged by this app |
-| `window_minutes` | — | `5` | How far back the metrics endpoint aggregates |
+| `project_name` | `MTL_PROJECT_NAME` | `my-project` | Value stored in `project_name` for every row logged by this app |
+| `route_prefix` | — | `api` | Intended URL prefix for the metrics endpoint — see [Known Limitations](#known-limitations--troubleshooting) |
+| `window_minutes` | — | `50` | How far back (minutes) the metrics endpoint aggregates |
 | `cache_ttl` | — | `60` | Legacy TTL value — largely superseded by write-invalidation, see [Caching Behavior](#caching-behavior) |
 | `sample_rate` | — | `1.0` | Fraction of requests actually logged, `0.0`–`1.0` |
-| `excluded_paths` | — | `['api/metrics/*', 'up', 'health']` | `Str::is()` patterns never logged |
-| `retention_days` | — | `7` | How many days of logs `mtl-monitorly-agent:prune` keeps |
-| `use_queue` | `REQUEST_TRACKER_USE_QUEUE` | `false` | Queue the DB write instead of writing inline — see [Queueing](#queueing) |
-| `queue_connection` | `REQUEST_TRACKER_QUEUE_CONNECTION` | app default | Queue connection for both the log-write job and alert emails |
-| `queue_name` | `REQUEST_TRACKER_QUEUE_NAME` | `default` | Queue name for both |
-| `alerts.enabled` | `REQUEST_TRACKER_ALERTS_ENABLED` | `false` | Master switch for vulnerability alerts |
-| `alerts.check_frequency_minutes` | `REQUEST_TRACKER_ALERTS_FREQUENCY` | `5` | How often the scan runs |
-| `alerts.recipients` | `REQUEST_TRACKER_ALERT_RECIPIENTS` | *(empty)* | Comma-separated email list |
-| `alerts.thresholds.status_code` | `REQUEST_TRACKER_ALERT_STATUS_CODE` | `500` | Alert if status code &ge; this |
-| `alerts.thresholds.response_ms` | `REQUEST_TRACKER_ALERT_RESPONSE_MS` | `2000` | Alert if response time &gt; this |
-| `alerts.thresholds.peak_memory_mb` | `REQUEST_TRACKER_ALERT_PEAK_MEMORY_MB` | `256` | Alert if peak memory &gt; this |
-| `alerts.max_rows_per_email` | `REQUEST_TRACKER_ALERT_MAX_ROWS` | `50` | Caps rows in a single alert email |
+| `excluded_paths` | — | `['api/metrics/*', 'api/metrics', 'up', 'health']` | `Str::is()` patterns never logged |
+| `retention_days` | — | `7` | How many days of logs the prune command keeps |
+| `use_queue` | `MTL_USE_QUEUE` | `false` | Queue the DB write instead of writing inline — see [Queueing](#queueing) |
+| `queue_connection` | `MTL_QUEUE_CONNECTION` | app default | Queue connection for both the log-write job and alert emails |
+| `queue_name` | `MTL_QUEUE_NAME` | `default` | Queue name for both |
+| `alerts.enabled` | `MTL_ALERTS_ENABLED` | `false` | Master switch for vulnerability alerts |
+| `alerts.check_frequency_minutes` | `MTL_ALERTS_FREQUENCY` | `5` | How often the scan runs |
+| `alerts.recipients` | `MTL_ALERT_RECIPIENTS` | *(empty)* | Comma-separated email list |
+| `alerts.thresholds.status_code` | `MTL_ALERT_STATUS_CODE` | `500` | Alert if status code &ge; this |
+| `alerts.thresholds.response_ms` | `MTL_ALERT_RESPONSE_MS` | `200` | Alert if response time &gt; this |
+| `alerts.thresholds.peak_memory_mb` | `MTL_ALERT_PEAK_MEMORY_MB` | `1` | Alert if peak memory &gt; this — **see caution below** |
+| `alerts.max_rows_per_email` | `MTL_ALERT_MAX_ROWS` | `50` | Caps rows in a single alert email |
 
-> ⚠️ `route_prefix` also exists in the config file but is **not currently applied anywhere** in the package's route registration — see [Known Limitations](#known-limitations--troubleshooting).
+> ⚠️ **Check `MTL_ALERT_PEAK_MEMORY_MB` before enabling alerts.** The current default is `1` (MB). A single MB of peak memory is lower than what most PHP requests use just to bootstrap a Laravel app, so at this setting almost every logged request will trip the memory alert — you'll likely get an alert email on every scheduled run rather than only on genuine outliers. A more realistic starting point is somewhere in the `64`–`256` range, tuned to your app's normal baseline.
+
+> ⚠️ `route_prefix` is defined here but **not currently applied** by the package's route registration — see [Known Limitations](#known-limitations--troubleshooting).
 
 ---
 
@@ -152,11 +155,11 @@ Returns cached, aggregated stats for the given project:
   "count": 87,
   "avgResponseMs": 55.3,
   "errorRatePercent": 2.3,
-  "timestamp": "2026-08-27T10:15:00+00:00"
+  "timestamp": "2026-08-30T10:15:00+00:00"
 }
 ```
 
-> ⚠️ As currently registered via `loadRoutesFrom()`, this route is mounted at the **application root** (`/metrics/{projectName}`), not under `/api/`. If you expected the `route_prefix` config to apply an `/api` prefix automatically, it doesn't yet — see [Known Limitations](#known-limitations--troubleshooting).
+> ⚠️ This route is currently mounted at the **application root** (`/metrics/{projectName}`), not under `/api/` — see [Known Limitations](#known-limitations--troubleshooting).
 
 ---
 
@@ -174,24 +177,26 @@ If you're running multiple app servers behind a load balancer, use a shared cach
 
 ## Vulnerability Alerts
 
-When enabled, a scheduled command periodically scans for new `request_logs` rows that cross any of three thresholds — status code, response time, or peak memory — and emails a single batched summary to a group of recipients.
+When enabled, a scheduled command periodically scans for new `mtl_request_logs` rows that cross any of three thresholds — status code, response time, or peak memory — and emails a single batched summary (with a CSV attachment of full row details) to a group of recipients.
 
 ### Enable it
 
 ```env
-REQUEST_TRACKER_ALERTS_ENABLED=true
-REQUEST_TRACKER_ALERT_RECIPIENTS=you@example.com,team@example.com
-REQUEST_TRACKER_ALERTS_FREQUENCY=5
-REQUEST_TRACKER_ALERT_STATUS_CODE=500
-REQUEST_TRACKER_ALERT_RESPONSE_MS=2000
-REQUEST_TRACKER_ALERT_PEAK_MEMORY_MB=256
+MTL_ALERTS_ENABLED=true
+MTL_ALERT_RECIPIENTS=you@example.com,team@example.com
+MTL_ALERTS_FREQUENCY=5
+MTL_ALERT_STATUS_CODE=500
+MTL_ALERT_RESPONSE_MS=200
+MTL_ALERT_PEAK_MEMORY_MB=128
 ```
+
+*(Overriding the memory threshold above the risky `1` default — see the caution note in [Configuration](#configuration).)*
 
 With `alerts.enabled` off (the default), the scan isn't even registered on the scheduler — not just skipped at runtime.
 
 ### How duplicate alerts are avoided
 
-The scan tracks a cache-based watermark (`mtl-monitorly-agent:alerts:last_id`) — the highest `request_logs.id` it has already scanned. Each run only looks at rows newer than that watermark, then advances it past everything it just scanned, whether or not those rows were vulnerable. This means:
+The scan tracks a cache-based watermark (`mtl-monitorly-agent:alerts:last_id`) — the highest `mtl_request_logs.id` it has already scanned. Each run only looks at rows newer than that watermark, then advances it past everything it just scanned, whether or not those rows were vulnerable. This means:
 
 - The same row is never included in two alert emails
 - Ordinary (non-vulnerable) rows are never re-scanned on the next run
@@ -199,7 +204,7 @@ The scan tracks a cache-based watermark (`mtl-monitorly-agent:alerts:last_id`) �
 
 ### Email content
 
-One email per run (not one per vulnerable row), capped at `alerts.max_rows_per_email`, listing project, method, path, status, response time, peak memory, and timestamp for each flagged request — sent via `Mtl\MonitorlyAgent\Mail\VulnerableRequestsDetected`, a queued `Mailable`.
+The email body is a short summary — total count, project(s) involved, and a per-threshold breakdown. Full row-level detail (project, method, path, status, response time, memory, IP, user agent, timestamp), capped at `alerts.max_rows_per_email`, is attached as a CSV file rather than rendered inline — raw tables in HTML email don't render consistently across clients. Sent via `Mtl\MonitorlyAgent\Mail\VulnerableRequestsDetected`, a queued `Mailable`.
 
 ---
 
@@ -211,10 +216,12 @@ Two commands are registered on Laravel's scheduler automatically:
 $schedule->command('mtl-monitorly-agent:prune')->daily();
 
 // only if alerts.enabled is true
-$schedule->command('mtl-monitorly-agent:check-vulnerable')
+$schedule->command('mtl-monitoring-agent:check-vulnerable')
     ->cron("*/{minutes} * * * *")
     ->withoutOverlapping();
 ```
+
+> ⚠️ **Command name inconsistency:** the prune command is `mtl-monitorly-agent:prune` while the alert-check command is `mtl-monitoring-agent:check-vulnerable` — note "monitor**ly**-agent" vs "monitor**ing**-agent". This is documented exactly as configured; double-check this is intentional, since it's easy to typo one for the other when running commands manually or writing external cron entries.
 
 For either to actually run, your server's cron must be calling Laravel's scheduler every minute — this is not automatic:
 
@@ -229,7 +236,7 @@ For either to actually run, your server's cron must be calling Laravel's schedul
 | Command | Description |
 |---|---|
 | `mtl-monitorly-agent:prune` | Deletes logs older than `retention_days` |
-| `mtl-monitorly-agent:check-vulnerable` | Scans new logs for threshold breaches and queues an alert email if any are found |
+| `mtl-monitoring-agent:check-vulnerable` | Scans new logs for threshold breaches and queues an alert email if any are found |
 
 Both can be run manually at any time, independent of the scheduler.
 
@@ -260,14 +267,16 @@ A long-running worker process does not pick up code changes — including new se
 
 ## Known Limitations & Troubleshooting
 
-- **`route_prefix` config is currently unused.** The metrics route is registered via `loadRoutesFrom()` directly, without applying `route_prefix` or wrapping it in the `api` middleware group. If you need it under `/api/metrics/{projectName}` with API-appropriate middleware (rate limiting, etc.), wrap the route registration yourself in a service provider override, or open an issue/PR to have the package apply it automatically.
-- **No per-project alert thresholds.** Thresholds are global across all projects sharing this installation — a project with naturally slower endpoints will alert at the same `response_ms` threshold as a fast one.
+- **`route_prefix` config is currently unused.** The metrics route is registered directly, without applying `route_prefix` or wrapping it in the `api` middleware group. If you need it under `/api/metrics/{projectName}` with API-appropriate middleware (rate limiting, etc.), wrap the route registration yourself in a service provider override, or ask for this to be wired in automatically.
+- **Command naming is inconsistent** — `mtl-monitorly-agent:prune` vs `mtl-monitoring-agent:check-vulnerable`. Worth aligning both to the same prefix to avoid confusion.
+- **`MTL_ALERT_PEAK_MEMORY_MB` defaults to `1`**, which is unrealistically low and will likely fire on nearly every request — raise this before enabling alerts in production.
+- **No per-project alert thresholds.** Thresholds are global across all projects sharing this installation.
 - **Peak memory reflects the whole PHP process**, not strictly the request handler — under heavy concurrency on some SAPIs this can be noisier than a per-request-isolated measurement.
-- **`No hint path defined for [mtl-monitorly-agent]` after upgrading** — almost always a stale queue worker; see [Queueing](#queueing) above. If restarting the worker doesn't resolve it, confirm the installed package version actually has `loadViewsFrom()` in its service provider (`grep -n "loadViewsFrom" vendor/mtlm/monitoring-agent/src/RequestTrackerServiceProvider.php`) and that `composer dump-autoload` has been run.
+- **`No hint path defined for [mtl-monitorly-agent]` after upgrading** — almost always a stale queue worker; see [Queueing](#queueing) above. If restarting the worker doesn't resolve it, confirm the installed package version has `loadViewsFrom()` in `MonitorlyAgentServiceProvider`, and that `composer dump-autoload` has been run.
 - **Cached metrics can look "stale" during a quiet period** — this is by design (write-invalidated, not time-invalidated); see [Caching Behavior](#caching-behavior).
 
 ---
 
 ## Conclusion
 
-This package gives you request-level observability — timing, status, memory — with minimal setup: attach one middleware, run the migrations, and point a dashboard at the metrics endpoint. The alerting layer is entirely opt-in and additive, so teams that only want passive logging can ignore it completely, while teams that want proactive notification can turn it on with a handful of environment variables. Everything expensive (writes, emails) can be pushed onto a queue, keeping the actual request/response cycle unaffected either way.
+This package gives you request-level observability — timing, status, memory — with minimal setup: attach one middleware, run the migrations, and point a dashboard at the metrics endpoint. The alerting layer is entirely opt-in and additive, so teams that only want passive logging can ignore it completely, while teams that want proactive notification can turn it on with a handful of environment variables. Everything expensive (writes, emails) can be pushed onto a queue, keeping the actual request/response cycle unaffected either way. Before enabling alerts in production, double-check the memory threshold and the command-name inconsistency noted above — both are easy to fix and worth resolving early.
