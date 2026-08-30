@@ -141,31 +141,31 @@ GET /metrics/{projectName}
 Returns cached, aggregated stats for the given project:
 
 ```json
-{
-  "projectName": "likelab-api",
-  "endpoints": [ { "method": "GET", "path": "/api/products", "status_code": 200, "response_ms": 42 } ],
-  "count": 87,
-  "avgResponseMs": 55.3,
-  "errorRatePercent": 2.3,
-  "timestamp": "2026-08-30T10:15:00+00:00"
-}
+ "projectName": "my-project",
+    "endpoints": [
+        {
+            "id": 1,
+            "project_name": "my-project",
+            "method": "GET",
+            "path": "api/products",
+            "status_code": 200,
+            "response_ms": 93,
+            "memory_mb": "0.91",
+            "peak_memory_mb": "10.00",
+            "ip": "127.0.0.1",
+            "user_agent": "PostmanRuntime/7.49.1",
+            "created_at": "2026-08-30T20:18:13.000000Z"
+        }
+    ],
+    "count": 1,
+    "avgResponseMs": 93,
+    "errorRatePercent": 0,
+    "timestamp": "2026-08-30T20:18:35+00:00"
 ```
 
 > ⚠️ This route is currently mounted at the **application root** (`/metrics/{projectName}`), not under `/api/` — see [Known Limitations](#known-limitations--troubleshooting).
 
 This is the endpoint the companion dashboard app polls — see below.
-
----
-
-## The Companion Dashboard
-
-**[mtl-monitorly-app](https://github.com/moinul70/mtl-monitorly-app)** is a separate Node.js/Express application that gives you a graphical interface for this package's data: a project list, an "add project" flow, and a live per-project dashboard (CPU/memory/uptime cards, an API endpoint table, and status indicators) that polls this package's `/metrics/{projectName}` endpoint on an interval.
-
-- **It's a separate install** — a different Node.js codebase/repository from this Laravel package, typically deployed alongside it (or pointed at it over the network).
-- **Project configuration happens in its own UI** — you add a project there (giving it a name/link), and it uses that identifier when calling this package's metrics endpoint for that project.
-- **It's read-only against this package** — it only consumes `/metrics/{projectName}`; it doesn't write to `mtl_request_logs` or configure this package's `.env`/thresholds. All alerting and logging configuration still lives in this Laravel package's config, per [Configuration](#configuration).
-
-> ℹ️ At the time of writing, the linked repository returned a 404 when checked — it may be private, unpublished, or the URL may have changed. Please verify the link and consult that project's own README for exact install/run instructions before relying on the details above.
 
 ---
 
@@ -288,6 +288,16 @@ A long-running worker process does not pick up code changes — including new se
 - **`No hint path defined for [mtl-monitorly-agent]` after upgrading** — almost always a stale queue worker; see [Queueing](#queueing) above.
 - **Cached metrics can look "stale" during a quiet period** — this is by design (write-invalidated, not time-invalidated); see [Caching Behavior](#caching-behavior).
 - **Companion dashboard link currently 404s** — verify the [mtl-monitorly-app](https://github.com/moinul70/mtl-monitorly-app) repository URL and its own README before relying on the description in [The Companion Dashboard](#the-companion-dashboard).
+
+---
+
+## The Companion Dashboard
+
+**[mtl-monitorly-app](https://github.com/moinul70/mtl-monitorly-app)** is a separate Node.js/Express application that gives you a graphical interface for this package's data: a project list, an "add project" flow, and a live per-project dashboard (CPU/memory/uptime cards, an API endpoint table, and status indicators) that polls this package's `/metrics/{projectName}` endpoint on an interval.
+
+- **It's a separate install** — a different Node.js codebase/repository from this Laravel package, typically deployed alongside it (or pointed at it over the network).
+- **Project configuration happens in its own UI** — you add a project there (giving it a name/link), and it uses that identifier when calling this package's metrics endpoint for that project.
+- **It's read-only against this package** — it only consumes `/metrics/{projectName}`; it doesn't write to `mtl_request_logs` or configure this package's `.env`/thresholds. All alerting and logging configuration still lives in this Laravel package's config, per [Configuration](#configuration).
 
 ---
 
