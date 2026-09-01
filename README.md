@@ -92,7 +92,9 @@ $this->app->make(Router::class)->pushMiddlewareToGroup(
 );
 ```
 ** Also manually add the middleware to the `web`/`api` groups in `bootstrap/app.php` if you want to track all routes.**
-```'monitoringly' => \Mtl\MonitorlyAgent\Http\Middleware\MonitoringAgentMiddleware::class```
+```php
+'monitoringly' => \Mtl\MonitorlyAgent\Http\Middleware\MonitoringAgentMiddleware::class
+```
 
 This means **every route that goes through the `api` middleware group is tracked automatically** the moment the package is installed — you don't add it to `bootstrap/app.php`, `Kernel.php`, or any individual route yourself.
 
